@@ -185,3 +185,10 @@ def test_sell_prepared():
     }
 
     assert prepped.body == b'{"outcome": "YES", "shares": 5}'
+
+
+def test_set_base_url():
+    wrapper = api.APIWrapper("no_key")
+    assert wrapper._prep_me().url == "https://manifold.markets/api/v0/me"
+    api.set_base_url('http://localhost:3000')
+    assert wrapper._prep_me().url == "http://localhost:3000/api/v0/me"

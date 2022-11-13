@@ -8,8 +8,12 @@ from typing import Dict, List, Tuple, List, Optional, TypeVar, Type, Any, Litera
 from time import time
 from manifoldpy import config
 
+base_url = "https://manifold.markets"
+def set_base_url(url):
+    global base_url
+    base_url = url
 
-V0_URL = "https://manifold.markets/api/v0/"
+V0_URL = "/api/v0/"
 USERNAME_URL = V0_URL + "user/{}"
 USER_ID_URL = V0_URL + "user/by-id/{}"
 USERS_URL = V0_URL + "users"
@@ -288,7 +292,7 @@ def get_user_by_name(username: str) -> User:
     Args:
         username:
     """
-    resp = requests.get(USERNAME_URL.format(username))
+    resp = requests.get(base_url + USERNAME_URL.format(username))
     resp.raise_for_status()
     return weak_structure(resp.json(), User)
 
@@ -300,7 +304,7 @@ def get_user_by_id(user_id: str) -> User:
     Args:
         user_id:
     """
-    resp = requests.get(USER_ID_URL.format(user_id))
+    resp = requests.get(base_url + USER_ID_URL.format(user_id))
     resp.raise_for_status()
     return weak_structure(resp.json(), User)
 
@@ -309,7 +313,7 @@ def get_users() -> List[User]:
     """Get all users
     [API reference](https://docs.manifold.markets/api#get-v0users)
     """
-    resp = requests.get(USERS_URL)
+    resp = requests.get(base_url + USERS_URL)
     resp.raise_for_status()
     return [weak_structure(x, User) for x in resp.json()]
 
@@ -327,7 +331,7 @@ def get_markets(limit: int = 1000, before: Optional[str] = None) -> List[Market]
         params = {"limit": limit, "before": before}
     else:
         params = {"limit": limit}
-    json = requests.get(ALL_MARKETS_URL, params=params).json()  # type: ignore
+    json = requests.get(base_url + ALL_MARKETS_URL, params=params).json()  # type: ignore
 
     # If this fails, the code is out of date.
     all_mechanisms = {x["mechanism"] for x in json}
@@ -347,7 +351,7 @@ def get_slug(slug: str) -> Market:
     """Get a market by its slug
     [API reference](https://docs.manifold.markets/api#get-v0slugmarketslug)
     """
-    market = requests.get(MARKET_SLUG_URL.format(slug)).json()
+    market = requests.get(base_url + MARKET_SLUG_URL.format(slug)).json()
     if "probability" in market:
         return BinaryMarket.from_json(market)
 
@@ -362,7 +366,7 @@ def get_market(market_id: str) -> Market:
         HTTPError: If the API gives a bad response.
             This is known to happen with markets with a very large number of bets.
     """
-    resp = requests.get(SINGLE_MARKET_URL.format(market_id), timeout=20)
+    resp = requests.get(base_url + SINGLE_MARKET_URL.format(market_id), timeout=20)
     resp.raise_for_status()
     market = resp.json()
     return Market.from_json(market)
@@ -390,7 +394,7 @@ def get_bets(
         params["market"] = market
     if before is not None:
         params["before"] = before
-    resp = requests.get(BETS_URL, params=params)
+    resp = requests.get(base_url + BETS_URL, params=params)
     resp.raise_for_status()
 
     return [weak_structure(x, Bet) for x in resp.json()]
@@ -411,7 +415,7 @@ class APIWrapper:
         """Prepare a me GET request.
         See `me` for details.
         """
-        req = requests.Request("GET", ME_URL, headers=self.headers)
+        req = requests.Request("GET", base_url + ME_URL, headers=self.headers)
         prepped = req.prepare()
         return prepped
     
@@ -434,7 +438,7 @@ class APIWrapper:
         data = {"amount": amount, "contractId": contractId, "outcome": outcome}
         if limitProb is not None:
             data["limitProb"] = limitProb
-        req = requests.Request("POST", MAKE_BET_URL, headers=self.headers, json=data)
+        req = requests.Request("POST", base_url + MAKE_BET_URL, headers=self.headers, json=data)
         prepped = req.prepare()
         return prepped
 
@@ -464,7 +468,7 @@ class APIWrapper:
         """Prepare a cancel bet POST request.
         See `cancel_bet` for details.
         """
-        req = requests.Request("POST", CANCEL_BET_URL.format(bet_id), headers=self.headers)
+        req = requests.Request("POST", base_url + CANCEL_BET_URL.format(bet_id), headers=self.headers)
         prepped = req.prepare()
         return prepped
 
@@ -528,7 +532,7 @@ class APIWrapper:
             data["min"] = min
             data["max"] = max
         req = requests.Request(
-            "POST", CREATE_MARKET_URL, headers=self.headers, json=data
+            "POST", base_url + CREATE_MARKET_URL, headers=self.headers, json=data
         )
         prepped = req.prepare()
         return prepped
@@ -597,7 +601,7 @@ class APIWrapper:
 
         req = requests.Request(
             "POST",
-            RESOLVE_MARKET_URL.format(market_id),
+            base_url + RESOLVE_MARKET_URL.format(market_id),
             headers=self.headers,
             json=data,
         )
@@ -647,7 +651,7 @@ class APIWrapper:
             data["shares"] = shares
 
         req = requests.Request(
-            "POST", SELL_SHARES_URL.format(market_id), headers=self.headers, json=data
+            "POST", base_url + SELL_SHARES_URL.format(market_id), headers=self.headers, json=data
         )
         prepped = req.prepare()
         return prepped
